@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<style>
+  :root {
+    --primary: #7B61FF;
+    --primary-hover: #6B4FE0;
+    --accent: #00D4AA;
+    --bg: #FFFFFF;
+    --bg-secondary: #F5F5F7;
+    --text: #1A1A2E;
+    --text-secondary: #6B6B80;
+    --border: #E0E0E8;
+    --error: #E53E3E;
+    --bar-bg: #F0EEFF;
+    --success: #38A169;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1E1E2E;
+      --bg-secondary: #2A2A3C;
+      --text: #E8E8F0;
+      --text-secondary: #9898B0;
+      --border: #3A3A50;
+      --bar-bg: #2E2B4A;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-size: 12px;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px 0;
+  }
+
+  .header-icon {
+    width: 20px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 4px;
+  }
+
+  .header-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .panel { display: none; padding: 16px; }
+  .panel.active { display: block; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .lang-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .lang-btn {
+    padding: 8px 4px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .lang-btn:hover { border-color: var(--primary); }
+
+  .lang-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .option-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  .option-item input[type="checkbox"] {
+    accent-color: var(--primary);
+    width: 14px;
+    height: 14px;
+  }
+
+  .generate-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .generate-btn:hover { background: var(--primary-hover); }
+  .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .error-msg {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #FFF5F5;
+    border: 1px solid #FEB2B2;
+    border-radius: 6px;
+    color: var(--error);
+    font-size: 11px;
+    display: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .error-msg { background: #2D1B1B; border-color: #5C2626; }
+  }
+
+  .output-section {
+    margin-top: 12px;
+    display: none;
+  }
+
+  .output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .copy-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--bg-secondary);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { border-color: var(--primary); }
+
+  .code-output {
+    width: 100%;
+    min-height: 140px;
+    max-height: 240px;
+    padding: 10px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 11px;
+    background: var(--bg-secondary);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    resize: vertical;
+    white-space: pre;
+    overflow: auto;
+    tab-size: 2;
+  }
+
+  .spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Settings panel */
+  .license-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .license-input {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: "SF Mono", monospace;
+    background: var(--bg-secondary);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+  }
+
+  .license-input:focus { border-color: var(--primary); }
+
+  .activate-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .license-status {
+    font-size: 11px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .license-status.valid { color: var(--success); }
+  .license-status.invalid { color: var(--error); }
+
+  .usage-section { margin-bottom: 16px; }
+
+  .usage-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .usage-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: var(--bar-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .usage-bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .usage-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .upgrade-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 8px;
+  }
+
+  .upgrade-btn:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-icon"></div>
+    <span class="header-title">Figma → Code — by Collabrix</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="generate">Generate</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </div>
+
+  <!-- Generate Panel -->
+  <div id="panel-generate" class="panel active">
+    <div class="section-label">Output Language</div>
+    <div class="lang-grid">
+      <button class="lang-btn active" data-lang="react">React</button>
+      <button class="lang-btn" data-lang="html">HTML+CSS</button>
+      <button class="lang-btn" data-lang="angular">Angular</button>
+      <button class="lang-btn" data-lang="flutter">Flutter</button>
+      <button class="lang-btn" data-lang="swiftui">SwiftUI</button>
+    </div>
+
+    <div class="section-label">Options</div>
+    <div class="options-grid">
+      <label class="option-item"><input type="checkbox" id="opt-responsive" checked /> Responsive</label>
+      <label class="option-item"><input type="checkbox" id="opt-comments" checked /> Comments</label>
+      <label class="option-item"><input type="checkbox" id="opt-designTokens" checked /> Design tokens</label>
+      <label class="option-item"><input type="checkbox" id="opt-animations" /> Animations</label>
+      <label class="option-item"><input type="checkbox" id="opt-accessibility" /> Accessibility</label>
+      <label class="option-item"><input type="checkbox" id="opt-prototypeFlows" /> Prototype flows</label>
+    </div>
+
+    <button class="generate-btn" id="generate-btn">
+      <span class="spinner" id="spinner"></span>
+      <span id="generate-label">Generate Code</span>
+    </button>
+
+    <div class="error-msg" id="error-msg"></div>
+
+    <div class="output-section" id="output-section">
+      <div class="output-header">
+        <span class="section-label" style="margin-bottom:0">Output</span>
+        <button class="copy-btn" id="copy-btn">Copy</button>
+      </div>
+      <textarea class="code-output" id="code-output" readonly></textarea>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="panel-settings" class="panel">
+    <div class="section-label">License Key</div>
+    <div class="license-row">
+      <input class="license-input" id="license-input" placeholder="CLX-XXXX-XXXX-XXXX" />
+      <button class="activate-btn" id="activate-btn">Activate</button>
+    </div>
+    <div class="license-status" id="license-status"></div>
+
+    <div class="usage-section">
+      <div class="section-label">This Month's Usage</div>
+      <div class="usage-bar-bg">
+        <div class="usage-bar-fill" id="usage-bar" style="width: 0%"></div>
+      </div>
+      <div class="usage-text" id="usage-text">Loading...</div>
+    </div>
+
+    <button class="upgrade-btn" id="upgrade-btn">Upgrade to Pro →</button>
+  </div>
+
+<script>
+  const LICENSE_CHECK_URL = "https://api.collabrix.zone/license-check";
+
+  let currentLanguage = "react";
+  let currentOptions = {
+    responsive: true,
+    comments: true,
+    designTokens: true,
+    animations: false,
+    accessibility: false,
+    prototypeFlows: false,
+  };
+  let storedLicenseKey = "";
+
+  // Tab switching
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+    });
+  });
+
+  // Language selection
+  document.querySelectorAll(".lang-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".lang-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentLanguage = btn.dataset.lang;
+      saveSettings();
+    });
+  });
+
+  // Options
+  const optionIds = ["responsive", "comments", "designTokens", "animations", "accessibility", "prototypeFlows"];
+  optionIds.forEach((id) => {
+    const el = document.getElementById("opt-" + id);
+    el.addEventListener("change", () => {
+      currentOptions[id] = el.checked;
+      saveSettings();
+    });
+  });
+
+  // Generate
+  const generateBtn = document.getElementById("generate-btn");
+  const spinner = document.getElementById("spinner");
+  const generateLabel = document.getElementById("generate-label");
+  const errorMsg = document.getElementById("error-msg");
+  const outputSection = document.getElementById("output-section");
+  const codeOutput = document.getElementById("code-output");
+
+  generateBtn.addEventListener("click", () => {
+    generateBtn.disabled = true;
+    spinner.style.display = "inline-block";
+    generateLabel.textContent = "Generating...";
+    errorMsg.style.display = "none";
+    outputSection.style.display = "none";
+    parent.postMessage({ pluginMessage: { type: "generate" } }, "*");
+  });
+
+  // Copy
+  document.getElementById("copy-btn").addEventListener("click", () => {
+    const btn = document.getElementById("copy-btn");
+    navigator.clipboard.writeText(codeOutput.value).then(() => {
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+    });
+  });
+
+  // Activate license
+  document.getElementById("activate-btn").addEventListener("click", () => {
+    const key = document.getElementById("license-input").value.trim();
+    if (!key) return;
+    parent.postMessage({ pluginMessage: { type: "save-license", licenseKey: key } }, "*");
+    storedLicenseKey = key;
+    checkLicense(key);
+  });
+
+  // Upgrade
+  document.getElementById("upgrade-btn").addEventListener("click", () => {
+    parent.postMessage({ pluginMessage: { type: "open-url", url: "https://collabrix.zone/upgrade" } }, "*");
+  });
+
+  function saveSettings() {
+    parent.postMessage({
+      pluginMessage: {
+        type: "save-settings",
+        language: currentLanguage,
+        options: currentOptions,
+      },
+    }, "*");
+  }
+
+  function showError(message, errorCode) {
+    errorMsg.style.display = "block";
+    let text = message;
+    if (errorCode === "FREE_QUOTA_EXCEEDED") {
+      text = "You've used all 10 free generations this month. ";
+      errorMsg.innerHTML = text + '<a href="#" onclick="event.preventDefault(); parent.postMessage({ pluginMessage: { type: \'open-url\', url: \'https://collabrix.zone/upgrade\' } }, \'*\');" style="color: var(--primary);">Upgrade →</a>';
+      return;
+    }
+    if (errorCode === "LICENSE_INACTIVE") {
+      text = "Your subscription is inactive. ";
+      errorMsg.innerHTML = text + '<a href="#" onclick="event.preventDefault(); parent.postMessage({ pluginMessage: { type: \'open-url\', url: \'https://collabrix.zone/upgrade\' } }, \'*\');" style="color: var(--primary);">Reactivate →</a>';
+      return;
+    }
+    if (errorCode === "LICENSE_EXPIRED") {
+      text = "Your license has expired. ";
+      errorMsg.innerHTML = text + '<a href="#" onclick="event.preventDefault(); parent.postMessage({ pluginMessage: { type: \'open-url\', url: \'https://collabrix.zone/upgrade\' } }, \'*\');" style="color: var(--primary);">Renew →</a>';
+      return;
+    }
+    errorMsg.textContent = text;
+  }
+
+  async function checkLicense(licenseKey) {
+    try {
+      const headers = { "x-figma-user-id": "ui-check" };
+      if (licenseKey) headers["x-collabrix-license"] = licenseKey;
+
+      const resp = await fetch(LICENSE_CHECK_URL, { headers });
+      const data = await resp.json();
+
+      const statusEl = document.getElementById("license-status");
+      const usageBar = document.getElementById("usage-bar");
+      const usageText = document.getElementById("usage-text");
+      const upgradeBtn = document.getElementById("upgrade-btn");
+
+      if (data.valid && data.plan === "pro") {
+        statusEl.textContent = "Pro Plan active";
+        statusEl.className = "license-status valid";
+        statusEl.style.display = "block";
+        upgradeBtn.style.display = "none";
+      } else if (licenseKey && !data.valid) {
+        statusEl.textContent = data.message || "Invalid license key";
+        statusEl.className = "license-status invalid";
+        statusEl.style.display = "block";
+        upgradeBtn.style.display = "inline-block";
+      } else {
+        statusEl.style.display = "none";
+        upgradeBtn.style.display = "inline-block";
+      }
+
+      usageBar.style.width = (data.percentUsed || 0) + "%";
+      usageText.textContent = data.message || `${data.generationsUsed || 0} / ${data.generationsLimit || 10} generations used`;
+
+      if (data.daysLeft !== undefined) {
+        usageText.textContent += ` · Resets in ${data.daysLeft} days`;
+      }
+    } catch (err) {
+      document.getElementById("usage-text").textContent = "Unable to check usage";
+    }
+  }
+
+  // Listen for messages from sandbox
+  window.onmessage = (event) => {
+    const msg = event.data.pluginMessage;
+    if (!msg) return;
+
+    switch (msg.type) {
+      case "settings":
+        currentLanguage = msg.language || "react";
+        currentOptions = msg.options || currentOptions;
+        storedLicenseKey = msg.licenseKey || "";
+
+        document.querySelectorAll(".lang-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.lang === currentLanguage);
+        });
+        optionIds.forEach((id) => {
+          document.getElementById("opt-" + id).checked = !!currentOptions[id];
+        });
+        if (storedLicenseKey) {
+          document.getElementById("license-input").value = storedLicenseKey;
+        }
+        checkLicense(storedLicenseKey);
+        break;
+
+      case "code-result":
+        generateBtn.disabled = false;
+        spinner.style.display = "none";
+        generateLabel.textContent = "Generate Code";
+        outputSection.style.display = "block";
+        codeOutput.value = msg.code;
+        if (msg.usage) {
+          document.getElementById("usage-bar").style.width =
+            Math.round((msg.usage.used / msg.usage.limit) * 100) + "%";
+          document.getElementById("usage-text").textContent =
+            `${msg.usage.used} / ${msg.usage.limit} generations used`;
+        }
+        break;
+
+      case "error":
+        generateBtn.disabled = false;
+        spinner.style.display = "none";
+        generateLabel.textContent = "Generate Code";
+        showError(msg.message, msg.error);
+        break;
+    }
+  };
+
+  // Init
+  parent.postMessage({ pluginMessage: { type: "get-settings" } }, "*");
+  parent.postMessage({ pluginMessage: { type: "resize", width: 340, height: 480 } }, "*");
+</script>
+</body>
+</html>

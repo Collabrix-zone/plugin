@@ -1,0 +1,15 @@
+{
+  "name": "Figma → Code — by Collabrix",
+  "id": "collabrix-figma-to-code",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://api.collabrix.zone",
+      "https://collabrix.zone"
+    ],
+    "reasoning": "Sends design data to Collabrix proxy which calls Claude AI to generate code."
+  }
+}

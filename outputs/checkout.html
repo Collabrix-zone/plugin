@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upgrade to Pro — Collabrix Zone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: #0D0D1A;
+      color: #E8E8F0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 440px;
+      width: 100%;
+      padding: 24px;
+    }
+
+    .wordmark {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: #7B61FF;
+      margin-bottom: 40px;
+      letter-spacing: -0.3px;
+    }
+
+    .plan-card {
+      background: #16162A;
+      border: 1px solid #2A2A44;
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .plan-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .plan-price {
+      font-size: 36px;
+      font-weight: 700;
+      color: #7B61FF;
+      margin-bottom: 4px;
+    }
+
+    .plan-price span {
+      font-size: 16px;
+      font-weight: 400;
+      color: #9898B0;
+    }
+
+    .plan-subtext {
+      font-size: 13px;
+      color: #9898B0;
+      margin-bottom: 24px;
+    }
+
+    .features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .features li {
+      padding: 6px 0;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .features li::before {
+      content: "✓";
+      color: #00D4AA;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .subscribe-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      background: #7B61FF;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .subscribe-btn:hover { background: #6B4FE0; }
+
+    .success-msg {
+      display: none;
+      margin-top: 20px;
+      padding: 16px;
+      background: #0D2818;
+      border: 1px solid #1A4A2A;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 14px;
+      color: #00D4AA;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 12px;
+      color: #6B6B80;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="wordmark">Collabrix Zone</div>
+
+    <div class="plan-card">
+      <div class="plan-title">Pro Plan</div>
+      <div class="plan-price">₹499 <span>/ month</span></div>
+      <div class="plan-subtext">Billed monthly · Cancel anytime · GST invoice provided</div>
+
+      <ul class="features">
+        <li>200 generations per month</li>
+        <li>All 5 code targets (React, HTML, Angular, Flutter, SwiftUI)</li>
+        <li>Claude Sonnet AI</li>
+        <li>Responsive + accessible code</li>
+        <li>Design tokens export</li>
+        <li>Priority email support</li>
+      </ul>
+
+      <button class="subscribe-btn" id="subscribe-btn">Subscribe Now — ₹499/month</button>
+
+      <div class="success-msg" id="success-msg">
+        Your license key will be emailed within a few minutes.
+      </div>
+    </div>
+
+    <div class="footer">Collabrix Zone Pvt. Ltd. · support@collabrix.zone</div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    document.getElementById("subscribe-btn").addEventListener("click", function () {
+      var options = {
+        key: "YOUR_RAZORPAY_KEY_ID", // TODO: replace before going live
+        amount: 49900,
+        currency: "INR",
+        name: "Collabrix Zone",
+        description: "Figma → Code — Pro Plan",
+        subscription_id: "YOUR_SUBSCRIPTION_ID", // TODO: replace before going live
+        prefill: { email: "" },
+        theme: { color: "#7B61FF" },
+        handler: function (response) {
+          document.getElementById("success-msg").style.display = "block";
+          document.getElementById("subscribe-btn").disabled = true;
+          document.getElementById("subscribe-btn").textContent = "Payment successful";
+        },
+      };
+      var rzp = new Razorpay(options);
+      rzp.open();
+    });
+  </script>
+</body>
+</html>
