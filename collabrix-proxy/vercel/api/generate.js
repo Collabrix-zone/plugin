@@ -1,6 +1,7 @@
 import { validateLicense } from "./lib/license-validator.js";
 
-const MAX_TOKENS = 4096;
+const MAX_TOKENS = 8192;
+const IS_LOCAL = process.env.LOCAL_DEV === "true";
 
 const PROVIDERS = {
   anthropic: {
@@ -67,19 +68,31 @@ const LANGUAGE_INSTRUCTIONS = {
   swiftui: "Use SwiftUI views. Output a complete View struct.",
 };
 
-function buildSystemPrompt(language, options) {
+function buildSystemPrompt(language, options, skeletonHTML) {
   const lines = [
-    `You are an expert frontend developer. Convert the provided Figma design data into clean, production-ready ${language} code. Follow these rules:`,
-    "- Use the exact colours, typography, spacing, and layout from the design data",
-    "- Output ONLY the code, no explanations or markdown fences",
+    `You are an expert frontend developer and pixel-perfect UI engineer. You will receive:`,
+    `1. Raw Figma design data (JSON) with exact node positions, colours, fonts, and layout properties`,
+    `2. A structural HTML skeleton generated from that data`,
+    ``,
+    `Your job: produce a SINGLE, complete, production-ready HTML file that looks exactly like the Figma design.`,
+    ``,
+    `CRITICAL RULES:`,
+    `- Output ONLY raw code. No markdown fences, no explanations, no preamble — just the HTML.`,
+    `- The skeleton shows the correct element hierarchy and nesting. Use it as your structural reference.`,
+    `- For the overall page layout, use CSS Grid on the body/container to create the proper grid structure (e.g. sidebar + content areas). Do NOT use position:absolute for major layout sections.`,
+    `- Convert Figma auto-layout (layoutMode: VERTICAL/HORIZONTAL) to CSS flexbox.`,
+    `- For colours: r, g, b values are floats 0-1. Convert: multiply by 255, then to hex. Example: r:0.165, g:0.267, b:0.831 → #2A44D4.`,
+    `- Use the EXACT dimensions, padding, gap, border-radius, font-size, font-weight, and colours from the data.`,
+    `- For VECTOR/icon nodes: use appropriate unicode symbols, emoji, or simple inline SVGs. Never leave empty divs.`,
+    `- Include Google Fonts imports for any custom fonts found in the data.`,
+    `- Extract colours into CSS custom properties in :root.`,
+    `- Make all interactive elements (buttons, links, nav items) have cursor:pointer and hover states with smooth transitions.`,
+    `- The output must be a complete, self-contained HTML file that renders correctly when opened in a browser.`,
   ];
 
-  if (options.responsive) lines.push("- Make the layout fully responsive");
-  if (options.comments) lines.push("- Add concise comments explaining key sections");
-  if (options.designTokens) lines.push("- Extract colours and spacing into CSS variables or design tokens");
-  if (options.animations) lines.push("- Include CSS transitions for hover states and interactions");
-  if (options.accessibility) lines.push("- Add ARIA labels, roles, and semantic HTML");
-  if (options.prototypeFlows) lines.push("- Include onClick handlers based on prototype interactions in the data");
+  if (options.responsive) lines.push("- Add responsive media queries for mobile (max-width: 768px) and tablet (max-width: 1024px).");
+  if (options.comments) lines.push("- Add brief comments for major sections.");
+  if (options.interactive) lines.push("- Add hover effects, focus states, and click handlers on interactive elements. Make nav items highlight on hover. Add keyboard navigation support.");
 
   if (LANGUAGE_INSTRUCTIONS[language]) {
     lines.push(`- ${LANGUAGE_INSTRUCTIONS[language]}`);
@@ -88,7 +101,24 @@ function buildSystemPrompt(language, options) {
   return lines.join("\n");
 }
 
+function buildUserMessage(language, nodeData, skeletonHTML) {
+  let msg = `Convert this Figma design to ${language} code.\n\n`;
+  msg += `## Figma Design Data:\n${JSON.stringify(nodeData, null, 2)}\n\n`;
+  if (skeletonHTML) {
+    msg += `## Structural HTML Skeleton (use as reference for hierarchy):\n${skeletonHTML}\n`;
+  }
+  return msg;
+}
+
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-figma-user-id, x-collabrix-license");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "METHOD_NOT_ALLOWED", message: "Use POST" });
   }
@@ -103,13 +133,18 @@ export default async function handler(req, res) {
       });
     }
 
-    const { nodeData, language, options, licenseKey, figmaUserId } = req.body;
+    const { nodeData, language, options, licenseKey, figmaUserId, skeletonHTML } = req.body;
 
     if (!nodeData) {
       return res.status(400).json({ error: "NO_SELECTION", message: "No design data provided." });
     }
 
-    const validation = await validateLicense(licenseKey || null, figmaUserId || "anonymous");
+    let validation;
+    if (IS_LOCAL) {
+      validation = { valid: true, plan: "free", generationsUsed: 1, generationsLimit: 999 };
+    } else {
+      validation = await validateLicense(licenseKey || null, figmaUserId || "anonymous");
+    }
 
     if (!validation.valid) {
       return res.status(validation.status).json({
@@ -118,8 +153,9 @@ export default async function handler(req, res) {
       });
     }
 
-    const systemPrompt = buildSystemPrompt(language || "react", options || {});
-    const userMessage = `Convert this Figma design to ${language || "react"} code:\n${JSON.stringify(nodeData, null, 2)}`;
+    const lang = language || "html";
+    const systemPrompt = buildSystemPrompt(lang, options || {}, skeletonHTML);
+    const userMessage = buildUserMessage(lang, nodeData, skeletonHTML);
 
     const config = PROVIDERS[provider.name];
     const response = await fetch(config.url, {
@@ -138,7 +174,10 @@ export default async function handler(req, res) {
     }
 
     const result = await response.json();
-    const code = config.extractCode(result);
+    let code = config.extractCode(result);
+
+    // Strip markdown fences if the model wrapped the output
+    code = code.replace(/^```[\w]*\n?/, "").replace(/\n?```\s*$/, "").trim();
 
     return res.status(200).json({
       code,

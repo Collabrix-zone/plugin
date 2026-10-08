@@ -95,34 +95,6 @@
     margin-bottom: 8px;
   }
 
-  .lang-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-
-  .lang-btn {
-    padding: 8px 4px;
-    font-size: 11px;
-    font-weight: 500;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    color: var(--text);
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.15s;
-  }
-
-  .lang-btn:hover { border-color: var(--primary); }
-
-  .lang-btn.active {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-  }
-
   .options-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -164,6 +136,28 @@
   .generate-btn:hover { background: var(--primary-hover); }
   .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
+  .enhance-btn {
+    width: 100%;
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 8px;
+    display: none;
+  }
+
+  .enhance-btn:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .enhance-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
   .error-msg {
     margin-top: 8px;
     padding: 8px 10px;
@@ -191,6 +185,11 @@
     margin-bottom: 6px;
   }
 
+  .action-btns {
+    display: flex;
+    gap: 6px;
+  }
+
   .copy-btn {
     padding: 4px 10px;
     font-size: 11px;
@@ -204,6 +203,46 @@
   }
 
   .copy-btn:hover { border-color: var(--primary); }
+
+  .download-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .download-btn:hover { background: var(--primary-hover); }
+
+  .output-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .output-tab {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .output-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .output-tab:hover { color: var(--text); }
 
   .code-output {
     width: 100%;
@@ -220,6 +259,14 @@
     white-space: pre;
     overflow: auto;
     tab-size: 2;
+  }
+
+  .preview-frame {
+    width: 100%;
+    height: 280px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
   }
 
   .spinner {
@@ -337,23 +384,12 @@
 
   <!-- Generate Panel -->
   <div id="panel-generate" class="panel active">
-    <div class="section-label">Output Language</div>
-    <div class="lang-grid">
-      <button class="lang-btn active" data-lang="react">React</button>
-      <button class="lang-btn" data-lang="html">HTML+CSS</button>
-      <button class="lang-btn" data-lang="angular">Angular</button>
-      <button class="lang-btn" data-lang="flutter">Flutter</button>
-      <button class="lang-btn" data-lang="swiftui">SwiftUI</button>
-    </div>
-
     <div class="section-label">Options</div>
     <div class="options-grid">
-      <label class="option-item"><input type="checkbox" id="opt-responsive" checked /> Responsive</label>
-      <label class="option-item"><input type="checkbox" id="opt-comments" checked /> Comments</label>
+      <label class="option-item"><input type="checkbox" id="opt-interactive" checked /> Interactive</label>
+      <label class="option-item"><input type="checkbox" id="opt-comments" /> Comments</label>
       <label class="option-item"><input type="checkbox" id="opt-designTokens" checked /> Design tokens</label>
-      <label class="option-item"><input type="checkbox" id="opt-animations" /> Animations</label>
-      <label class="option-item"><input type="checkbox" id="opt-accessibility" /> Accessibility</label>
-      <label class="option-item"><input type="checkbox" id="opt-prototypeFlows" /> Prototype flows</label>
+      <label class="option-item"><input type="checkbox" id="opt-responsive" /> Responsive</label>
     </div>
 
     <button class="generate-btn" id="generate-btn">
@@ -361,14 +397,28 @@
       <span id="generate-label">Generate Code</span>
     </button>
 
+    <button class="enhance-btn" id="enhance-btn">Enhance with AI</button>
+
     <div class="error-msg" id="error-msg"></div>
 
     <div class="output-section" id="output-section">
       <div class="output-header">
         <span class="section-label" style="margin-bottom:0">Output</span>
-        <button class="copy-btn" id="copy-btn">Copy</button>
+        <div class="action-btns">
+          <button class="copy-btn" id="copy-btn">Copy</button>
+          <button class="download-btn" id="download-btn">Download</button>
+        </div>
       </div>
-      <textarea class="code-output" id="code-output" readonly></textarea>
+      <div class="output-tabs">
+        <button class="output-tab" data-view="code">Code</button>
+        <button class="output-tab active" data-view="preview">Preview</button>
+      </div>
+      <div id="view-code" style="display:none">
+        <textarea class="code-output" id="code-output" readonly></textarea>
+      </div>
+      <div id="view-preview">
+        <iframe class="preview-frame" id="preview-frame" sandbox="allow-scripts"></iframe>
+      </div>
     </div>
   </div>
 
@@ -393,58 +443,586 @@
   </div>
 
 <script>
-  const LICENSE_CHECK_URL = "https://api.collabrix.zone/license-check";
+  // TODO: Change back to https://api.collabrix.zone before publishing
+  var PROXY_URL = "http://localhost:3000/api/generate";
+  var LICENSE_CHECK_URL = "http://localhost:3000/api/license-check";
 
-  let currentLanguage = "react";
-  let currentOptions = {
-    responsive: true,
-    comments: true,
+  var currentOptions = {
+    interactive: true,
+    comments: false,
     designTokens: true,
-    animations: false,
-    accessibility: false,
-    prototypeFlows: false,
+    responsive: false,
   };
-  let storedLicenseKey = "";
+  var storedLicenseKey = "";
+  var lastNodeData = null;
+  var lastGeneratedCode = "";
+  var lastSkeletonHTML = "";
+
+  // ═══════════════════════════════════════════════════
+  //  DETERMINISTIC FIGMA → HTML CONVERTER
+  // ═══════════════════════════════════════════════════
+
+  var classCounter = 0;
+  var cssRules = [];
+  var tokenColors = {};
+  var tokenFonts = {};
+  var interactionScripts = [];
+
+  var tokenCounter = 0;
+
+  function resetConverter() {
+    classCounter = 0;
+    tokenCounter = 0;
+    cssRules = [];
+    tokenColors = {};
+    tokenFonts = {};
+    interactionScripts = [];
+  }
+
+  function toHex(r, g, b) {
+    var rr = Math.round(r * 255).toString(16).padStart(2, "0");
+    var gg = Math.round(g * 255).toString(16).padStart(2, "0");
+    var bb = Math.round(b * 255).toString(16).padStart(2, "0");
+    return "#" + rr + gg + bb;
+  }
+
+  function toRGBA(c) {
+    if (!c) return "transparent";
+    if (c.a !== undefined && c.a < 1) {
+      return "rgba(" + Math.round(c.r * 255) + ", " + Math.round(c.g * 255) + ", " + Math.round(c.b * 255) + ", " + c.a.toFixed(2) + ")";
+    }
+    return toHex(c.r, c.g, c.b);
+  }
+
+  function safeName(name) {
+    return name.replace(/[^a-zA-Z0-9_-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase() || "el";
+  }
+
+  function makeClass(node) {
+    classCounter++;
+    return safeName(node.name) + "-" + classCounter;
+  }
+
+  function registerToken(hex, name) {
+    if (!tokenColors[hex]) {
+      tokenCounter++;
+      tokenColors[hex] = "--c-" + tokenCounter;
+    }
+    return "var(" + tokenColors[hex] + ")";
+  }
+
+  function colorValue(c, name) {
+    var val = toRGBA(c);
+    if (currentOptions.designTokens && val.charAt(0) === "#") {
+      return registerToken(val, name);
+    }
+    return val;
+  }
+
+  function buildFill(fills, name) {
+    if (!fills || fills.length === 0) return null;
+    var fill = fills[fills.length - 1]; // topmost fill
+    if (fill.type === "SOLID" && fill.color) {
+      return colorValue(fill.color, name);
+    }
+    if (fill.type === "GRADIENT_LINEAR" && fill.gradientStops) {
+      var stops = fill.gradientStops.map(function(s) {
+        return toRGBA(s.color) + " " + Math.round(s.position * 100) + "%";
+      }).join(", ");
+      return "linear-gradient(180deg, " + stops + ")";
+    }
+    return null;
+  }
+
+  function buildShadow(effects) {
+    if (!effects) return null;
+    var shadows = [];
+    for (var i = 0; i < effects.length; i++) {
+      var e = effects[i];
+      if (e.type === "DROP_SHADOW" || e.type === "INNER_SHADOW") {
+        var inset = e.type === "INNER_SHADOW" ? "inset " : "";
+        shadows.push(
+          inset +
+          (e.offset ? e.offset.x : 0) + "px " +
+          (e.offset ? e.offset.y : 0) + "px " +
+          (e.radius || 0) + "px " +
+          (e.spread || 0) + "px " +
+          toRGBA(e.color)
+        );
+      }
+    }
+    return shadows.length > 0 ? shadows.join(", ") : null;
+  }
+
+  function buildBorderRadius(node) {
+    if (node.cornerRadius) return node.cornerRadius + "px";
+    if (node.topLeftRadius !== undefined) {
+      return node.topLeftRadius + "px " + node.topRightRadius + "px " +
+             node.bottomRightRadius + "px " + node.bottomLeftRadius + "px";
+    }
+    return null;
+  }
+
+  function buildTextStyles(node) {
+    var styles = {};
+    if (node.fontSize) styles["font-size"] = node.fontSize + "px";
+    if (node.fontFamily) {
+      styles["font-family"] = "'" + node.fontFamily + "', sans-serif";
+      tokenFonts[node.fontFamily] = true;
+    }
+    if (node.fontStyle) {
+      var style = node.fontStyle.toLowerCase();
+      if (style.indexOf("bold") > -1 || style.indexOf("700") > -1) styles["font-weight"] = "700";
+      else if (style.indexOf("semibold") > -1 || style.indexOf("600") > -1) styles["font-weight"] = "600";
+      else if (style.indexOf("medium") > -1 || style.indexOf("500") > -1) styles["font-weight"] = "500";
+      else if (style.indexOf("light") > -1 || style.indexOf("300") > -1) styles["font-weight"] = "300";
+      else styles["font-weight"] = "400";
+      if (style.indexOf("italic") > -1) styles["font-style"] = "italic";
+    }
+    if (node.letterSpacing && node.letterSpacing.value) {
+      if (node.letterSpacing.unit === "PERCENT") {
+        styles["letter-spacing"] = (node.letterSpacing.value / 100) + "em";
+      } else {
+        styles["letter-spacing"] = node.letterSpacing.value + "px";
+      }
+    }
+    if (node.lineHeight && node.lineHeight.value) {
+      if (node.lineHeight.unit === "PIXELS") {
+        styles["line-height"] = node.lineHeight.value + "px";
+      } else if (node.lineHeight.unit === "PERCENT") {
+        styles["line-height"] = (node.lineHeight.value / 100).toFixed(2);
+      }
+    }
+    if (node.textAlignHorizontal) {
+      var align = { LEFT: "left", CENTER: "center", RIGHT: "right", JUSTIFIED: "justify" };
+      if (align[node.textAlignHorizontal]) styles["text-align"] = align[node.textAlignHorizontal];
+    }
+    if (node.textDecoration === "UNDERLINE") styles["text-decoration"] = "underline";
+    if (node.textDecoration === "STRIKETHROUGH") styles["text-decoration"] = "line-through";
+    if (node.textCase === "UPPER") styles["text-transform"] = "uppercase";
+    if (node.textCase === "LOWER") styles["text-transform"] = "lowercase";
+    return styles;
+  }
+
+  function convertNode(node, parentLayoutMode, depth, isRoot) {
+    if (!node) return "";
+    // Skip invisible nodes
+    if (node.visible === false) return "";
+
+    // ── GROUP nodes → flatten (no visual properties, just pass children through) ──
+    if (node.type === "GROUP") {
+      var groupContent = "";
+      if (node.children && node.children.length > 0) {
+        for (var gi = 0; gi < node.children.length; gi++) {
+          groupContent += convertNode(node.children[gi], parentLayoutMode, depth, false);
+        }
+      }
+      return groupContent;
+    }
+
+    var cls = makeClass(node);
+    var styles = {};
+    var indent = "";
+    for (var d = 0; d < depth; d++) indent += "  ";
+
+    var isFlexChild = !!parentLayoutMode;
+
+    // ── SVG / Icon nodes → render inline SVG ──
+    if (node.isIcon && node.svgContent) {
+      styles["width"] = node.width + "px";
+      styles["height"] = node.height + "px";
+      styles["flex-shrink"] = "0";
+      styles["display"] = "inline-flex";
+      styles["align-items"] = "center";
+      styles["justify-content"] = "center";
+
+      if (isRoot) {
+        // no positioning
+      } else if (isFlexChild && node.layoutPositioning !== "ABSOLUTE") {
+        if (node.layoutGrow === 1) styles["flex-grow"] = "1";
+      } else if (!isRoot) {
+        styles["position"] = "absolute";
+        styles["left"] = node.x + "px";
+        styles["top"] = node.y + "px";
+      }
+
+      if (node.opacity !== undefined && node.opacity < 1) {
+        styles["opacity"] = node.opacity.toFixed(2);
+      }
+
+      var svgCssLines = [];
+      for (var sp in styles) {
+        if (styles[sp] !== undefined) svgCssLines.push("  " + sp + ": " + styles[sp] + ";");
+      }
+
+      if (currentOptions.interactive && node.reactions && node.reactions.length > 0) {
+        svgCssLines.push("  cursor: pointer;");
+        svgCssLines.push("  transition: opacity 0.15s ease;");
+        cssRules.push("." + cls + ":hover {\n  opacity: 0.7;\n}");
+      }
+
+      if (svgCssLines.length > 0) {
+        cssRules.push("." + cls + " {\n" + svgCssLines.join("\n") + "\n}");
+      }
+
+      var svg = node.svgContent;
+      if (svg.indexOf("width=") === -1) {
+        svg = svg.replace("<svg", '<svg width="100%" height="100%"');
+      } else {
+        svg = svg.replace(/width="[^"]*"/, 'width="100%"').replace(/height="[^"]*"/, 'height="100%"');
+      }
+
+      var svgComment = "";
+      if (currentOptions.comments && node.name) {
+        svgComment = indent + "<!-- " + node.name + " -->\n";
+      }
+      return svgComment + indent + '<div class="' + cls + '">' + svg + '</div>\n';
+    }
+
+    // ── Sizing ──
+    if (isFlexChild && node.layoutPositioning !== "ABSOLUTE") {
+      // Horizontal sizing
+      if (node.layoutSizingHorizontal === "FILL") {
+        if (parentLayoutMode === "HORIZONTAL") {
+          styles["flex"] = "1";
+          styles["min-width"] = "0";
+        } else {
+          styles["width"] = "100%";
+        }
+      } else if (node.layoutSizingHorizontal === "HUG") {
+        // content-sized
+      } else if (node.width) {
+        styles["width"] = node.width + "px";
+      }
+
+      // Vertical sizing
+      if (node.layoutSizingVertical === "FILL") {
+        if (parentLayoutMode === "VERTICAL") {
+          styles["flex"] = "1";
+          styles["min-height"] = "0";
+        } else {
+          styles["align-self"] = "stretch";
+        }
+      } else if (node.layoutSizingVertical === "HUG") {
+        // content-sized
+      } else if (node.height && node.type !== "TEXT") {
+        styles["height"] = node.height + "px";
+      }
+
+      if (node.layoutGrow === 1) {
+        styles["flex-grow"] = "1";
+      }
+      if (node.layoutAlign === "STRETCH") {
+        if (parentLayoutMode === "HORIZONTAL") {
+          styles["align-self"] = "stretch";
+        } else {
+          styles["width"] = "100%";
+        }
+      }
+    } else {
+      if (node.width) styles["width"] = node.width + "px";
+      if (node.height && node.type !== "TEXT") styles["height"] = node.height + "px";
+    }
+
+    // ── Positioning ──
+    if (isRoot) {
+      // Root: no positioning
+    } else if (isFlexChild && node.layoutPositioning !== "ABSOLUTE") {
+      // Flex child: handled by flex
+    } else {
+      styles["position"] = "absolute";
+      styles["left"] = node.x + "px";
+      styles["top"] = node.y + "px";
+    }
+
+    // ── Background / Image ──
+    if (node.type !== "TEXT") {
+      if (node.imageBase64) {
+        // Image fill → render as background-image
+        styles["background-image"] = "url(" + node.imageBase64 + ")";
+        styles["background-size"] = "cover";
+        styles["background-position"] = "center";
+      } else {
+        var bg = buildFill(node.fills, node.name);
+        if (bg) {
+          if (bg.indexOf("gradient") > -1) {
+            styles["background"] = bg;
+          } else {
+            styles["background-color"] = bg;
+          }
+        }
+      }
+    }
+
+    // ── Border ──
+    if (node.strokes && node.strokes.length > 0 && node.strokes[0].color) {
+      var strokeColor = toRGBA(node.strokes[0].color);
+      var sw = node.strokeWeight || 1;
+      styles["border"] = sw + "px solid " + strokeColor;
+    }
+
+    // ── Border radius ──
+    var br = buildBorderRadius(node);
+    if (br) styles["border-radius"] = br;
+
+    // ── Shadows ──
+    var shadow = buildShadow(node.effects);
+    if (shadow) styles["box-shadow"] = shadow;
+
+    // ── Opacity ──
+    if (node.opacity !== undefined && node.opacity < 1) {
+      styles["opacity"] = node.opacity.toFixed(2);
+    }
+
+    // ── Overflow ──
+    if (node.clipsContent) styles["overflow"] = "hidden";
+
+    // ── Auto-layout → Flexbox ──
+    // Treat FRAME, COMPONENT, INSTANCE the same way
+    var hasLayout = node.layoutMode && node.layoutMode !== "NONE";
+    if (hasLayout) {
+      styles["display"] = "flex";
+      styles["flex-direction"] = node.layoutMode === "VERTICAL" ? "column" : "row";
+      if (node.layoutWrap === "WRAP") styles["flex-wrap"] = "wrap";
+
+      var mainAxis = node.primaryAxisAlignItems;
+      var crossAxis = node.counterAxisAlignItems;
+      var jcMap = { MIN: "flex-start", MAX: "flex-end", CENTER: "center", SPACE_BETWEEN: "space-between" };
+      var aiMap = { MIN: "flex-start", MAX: "flex-end", CENTER: "center", BASELINE: "baseline" };
+      if (jcMap[mainAxis]) styles["justify-content"] = jcMap[mainAxis];
+      if (aiMap[crossAxis]) styles["align-items"] = aiMap[crossAxis];
+
+      if (node.itemSpacing && mainAxis !== "SPACE_BETWEEN") {
+        styles["gap"] = node.itemSpacing + "px";
+      }
+
+      var pt = node.paddingTop || 0;
+      var pr = node.paddingRight || 0;
+      var pb = node.paddingBottom || 0;
+      var pl = node.paddingLeft || 0;
+      if (pt || pr || pb || pl) {
+        if (pt === pr && pr === pb && pb === pl) {
+          styles["padding"] = pt + "px";
+        } else if (pt === pb && pl === pr) {
+          styles["padding"] = pt + "px " + pr + "px";
+        } else {
+          styles["padding"] = pt + "px " + pr + "px " + pb + "px " + pl + "px";
+        }
+      }
+    } else if (node.children && node.children.length > 0 && node.type !== "TEXT") {
+      // Non-auto-layout container → relative for absolute children
+      if (!styles["position"]) styles["position"] = "relative";
+    }
+
+    // ── Text node ──
+    if (node.type === "TEXT") {
+      var textStyles = buildTextStyles(node);
+      for (var ts in textStyles) {
+        styles[ts] = textStyles[ts];
+      }
+      if (node.fills && node.fills.length > 0 && node.fills[0].color) {
+        styles["color"] = colorValue(node.fills[0].color, "text");
+      }
+    }
+
+    // ── Build CSS rule ──
+    var cssLines = [];
+    for (var prop in styles) {
+      if (styles[prop] !== undefined) {
+        cssLines.push("  " + prop + ": " + styles[prop] + ";");
+      }
+    }
+
+    if (currentOptions.interactive && node.reactions && node.reactions.length > 0) {
+      cssLines.push("  cursor: pointer;");
+      cssLines.push("  transition: opacity 0.15s ease, transform 0.15s ease;");
+      cssRules.push("." + cls + ":hover {\n  opacity: 0.85;\n  transform: scale(1.01);\n}");
+      cssRules.push("." + cls + ":active {\n  transform: scale(0.98);\n}");
+    }
+
+    if (cssLines.length > 0) {
+      cssRules.push("." + cls + " {\n" + cssLines.join("\n") + "\n}");
+    }
+
+    // ── Build HTML ──
+    var tag = "div";
+    var attrs = 'class="' + cls + '"';
+    var content = "";
+
+    if (currentOptions.interactive && node.reactions && node.reactions.length > 0) {
+      for (var ri = 0; ri < node.reactions.length; ri++) {
+        var rx = node.reactions[ri];
+        if (rx.url) {
+          attrs += ' onclick="window.open(\'' + rx.url + '\', \'_blank\')"';
+        } else if (rx.action === "NAVIGATE" || rx.navigation === "NAVIGATE") {
+          attrs += ' tabindex="0" role="button"';
+        }
+        if (rx.trigger === "ON_CLICK" || rx.trigger === "ON_PRESS" || rx.trigger === "ON_HOVER") {
+          attrs += ' tabindex="0" role="button"';
+        }
+      }
+    }
+
+    // ── Text → semantic tag ──
+    if (node.type === "TEXT") {
+      var escaped = (node.characters || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      if (node.fontSize && node.fontSize >= 20) tag = "h2";
+      else if (node.fontSize && node.fontSize >= 16) tag = "h3";
+      else if (node.fontSize && node.fontSize >= 14 && node.fontStyle && node.fontStyle.toLowerCase().indexOf("bold") > -1) tag = "h4";
+      else tag = "span";
+
+      return indent + "<" + tag + " " + attrs + ">" + escaped + "</" + tag + ">\n";
+    }
+
+    // ── Vector nodes without svgContent (fallback) ──
+    var isVectorType = (node.type === "VECTOR" || node.type === "BOOLEAN_OPERATION" ||
+      node.type === "STAR" || node.type === "LINE" || node.type === "ELLIPSE" || node.type === "POLYGON");
+    if (isVectorType) {
+      return indent + "<div " + attrs + "></div>\n";
+    }
+
+    // ── Image-only nodes (no children, just an image fill) ──
+    if (node.imageBase64 && (!node.children || node.children.length === 0)) {
+      return indent + "<img " + attrs + ' src="' + node.imageBase64 + '" alt="' + (node.name || '') + '" style="width:100%;height:100%;object-fit:cover;" />\n';
+    }
+
+    // ── Container with children ──
+    var childLayoutMode = hasLayout ? node.layoutMode : null;
+
+    if (node.children && node.children.length > 0) {
+      content = "\n";
+      for (var ci = 0; ci < node.children.length; ci++) {
+        content += convertNode(node.children[ci], childLayoutMode, depth + 1, false);
+      }
+      content += indent;
+    }
+
+    var comment = "";
+    if (currentOptions.comments && node.name) {
+      comment = indent + "<!-- " + node.name + " -->\n";
+    }
+
+    return comment + indent + "<" + tag + " " + attrs + ">" + content + "</" + tag + ">\n";
+  }
+
+  function generateHTML(nodeData) {
+    resetConverter();
+
+    // Convert node tree (root node: isRoot=true)
+    var bodyHTML = convertNode(nodeData, null, 2, true);
+
+    // Build token variables
+    var tokenCSS = "";
+    if (currentOptions.designTokens && Object.keys(tokenColors).length > 0) {
+      tokenCSS = "  :root {\n";
+      for (var hex in tokenColors) {
+        tokenCSS += "    " + tokenColors[hex] + ": " + hex + ";\n";
+      }
+      tokenCSS += "  }\n\n";
+    }
+
+    // Collect fonts
+    var fontImport = "";
+    var fonts = Object.keys(tokenFonts);
+    if (fonts.length > 0) {
+      var gFonts = fonts.map(function(f) { return f.replace(/ /g, "+"); }).join("&family=");
+      fontImport = '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+                   '  <link href="https://fonts.googleapis.com/css2?family=' + gFonts + ':wght@300;400;500;600;700&display=swap" rel="stylesheet">\n';
+    }
+
+    // Build interaction script
+    var scriptBlock = "";
+    if (currentOptions.interactive) {
+      scriptBlock = '\n  <script>\n' +
+        '    document.addEventListener("DOMContentLoaded", function() {\n' +
+        '      // Add hover feedback to interactive elements\n' +
+        '      var buttons = document.querySelectorAll("[role=button]");\n' +
+        '      buttons.forEach(function(btn) {\n' +
+        '        btn.addEventListener("keydown", function(e) {\n' +
+        '          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); btn.click(); }\n' +
+        '        });\n' +
+        '      });\n' +
+        '    });\n' +
+        '  <\/script>\n';
+    }
+
+    // Responsive wrapper
+    var responsiveCSS = "";
+    if (currentOptions.responsive) {
+      responsiveCSS = "\n  @media (max-width: 768px) {\n" +
+        "    body { overflow-x: auto; }\n" +
+        "  }\n";
+    }
+
+    // Assemble full HTML
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+      '  <meta charset="UTF-8">\n' +
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '  <title>' + (nodeData.name || "Figma Design") + '</title>\n' +
+      fontImport +
+      '  <style>\n' +
+      '  * { margin: 0; padding: 0; box-sizing: border-box; }\n' +
+      '  body { -webkit-font-smoothing: antialiased; }\n\n' +
+      tokenCSS +
+      cssRules.join("\n\n") + "\n" +
+      responsiveCSS +
+      '  </style>\n' +
+      '</head>\n<body>\n' +
+      bodyHTML +
+      scriptBlock +
+      '</body>\n</html>';
+
+    return html;
+  }
+
+  // ═══════════════════════════════════════════════════
+  //  UI LOGIC
+  // ═══════════════════════════════════════════════════
 
   // Tab switching
-  document.querySelectorAll(".tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+      document.querySelectorAll(".panel").forEach(function(p) { p.classList.remove("active"); });
       tab.classList.add("active");
       document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
     });
   });
 
-  // Language selection
-  document.querySelectorAll(".lang-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".lang-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      currentLanguage = btn.dataset.lang;
-      saveSettings();
+  // Options
+  var optionIds = ["interactive", "comments", "designTokens", "responsive"];
+  optionIds.forEach(function(id) {
+    var el = document.getElementById("opt-" + id);
+    el.addEventListener("change", function() {
+      currentOptions[id] = el.checked;
     });
   });
 
-  // Options
-  const optionIds = ["responsive", "comments", "designTokens", "animations", "accessibility", "prototypeFlows"];
-  optionIds.forEach((id) => {
-    const el = document.getElementById("opt-" + id);
-    el.addEventListener("change", () => {
-      currentOptions[id] = el.checked;
-      saveSettings();
+  // Output tab switching
+  document.querySelectorAll(".output-tab").forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      document.querySelectorAll(".output-tab").forEach(function(t) { t.classList.remove("active"); });
+      tab.classList.add("active");
+      var view = tab.dataset.view;
+      document.getElementById("view-code").style.display = view === "code" ? "block" : "none";
+      document.getElementById("view-preview").style.display = view === "preview" ? "block" : "none";
     });
   });
 
   // Generate
-  const generateBtn = document.getElementById("generate-btn");
-  const spinner = document.getElementById("spinner");
-  const generateLabel = document.getElementById("generate-label");
-  const errorMsg = document.getElementById("error-msg");
-  const outputSection = document.getElementById("output-section");
-  const codeOutput = document.getElementById("code-output");
+  var generateBtn = document.getElementById("generate-btn");
+  var enhanceBtn = document.getElementById("enhance-btn");
+  var spinner = document.getElementById("spinner");
+  var generateLabel = document.getElementById("generate-label");
+  var errorMsg = document.getElementById("error-msg");
+  var outputSection = document.getElementById("output-section");
+  var codeOutput = document.getElementById("code-output");
 
-  generateBtn.addEventListener("click", () => {
+  generateBtn.addEventListener("click", function() {
     generateBtn.disabled = true;
     spinner.style.display = "inline-block";
     generateLabel.textContent = "Generating...";
@@ -454,17 +1032,37 @@
   });
 
   // Copy
-  document.getElementById("copy-btn").addEventListener("click", () => {
-    const btn = document.getElementById("copy-btn");
-    navigator.clipboard.writeText(codeOutput.value).then(() => {
+  document.getElementById("copy-btn").addEventListener("click", function() {
+    var btn = document.getElementById("copy-btn");
+    navigator.clipboard.writeText(codeOutput.value).then(function() {
       btn.textContent = "Copied!";
-      setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+      setTimeout(function() { btn.textContent = "Copy"; }, 2000);
     });
   });
 
+  // Download
+  document.getElementById("download-btn").addEventListener("click", function() {
+    var code = codeOutput.value;
+    if (!code) return;
+    var filename = "collabrix-output.html";
+    var blob = new Blob([code], { type: "text/html" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Re-enhance with AI
+  enhanceBtn.addEventListener("click", function() {
+    if (!lastNodeData) return;
+    doAIGenerate(lastNodeData, lastSkeletonHTML, currentOptions);
+  });
+
   // Activate license
-  document.getElementById("activate-btn").addEventListener("click", () => {
-    const key = document.getElementById("license-input").value.trim();
+  document.getElementById("activate-btn").addEventListener("click", function() {
+    var key = document.getElementById("license-input").value.trim();
     if (!key) return;
     parent.postMessage({ pluginMessage: { type: "save-license", licenseKey: key } }, "*");
     storedLicenseKey = key;
@@ -472,53 +1070,40 @@
   });
 
   // Upgrade
-  document.getElementById("upgrade-btn").addEventListener("click", () => {
+  document.getElementById("upgrade-btn").addEventListener("click", function() {
     parent.postMessage({ pluginMessage: { type: "open-url", url: "https://collabrix.zone/upgrade" } }, "*");
   });
 
-  function saveSettings() {
-    parent.postMessage({
-      pluginMessage: {
-        type: "save-settings",
-        language: currentLanguage,
-        options: currentOptions,
-      },
-    }, "*");
-  }
-
   function showError(message, errorCode) {
     errorMsg.style.display = "block";
-    let text = message;
-    if (errorCode === "FREE_QUOTA_EXCEEDED") {
-      text = "You've used all 10 free generations this month. ";
-      errorMsg.innerHTML = text + '<a href="#" onclick="event.preventDefault(); parent.postMessage({ pluginMessage: { type: \'open-url\', url: \'https://collabrix.zone/upgrade\' } }, \'*\');" style="color: var(--primary);">Upgrade →</a>';
-      return;
-    }
-    if (errorCode === "LICENSE_INACTIVE") {
-      text = "Your subscription is inactive. ";
-      errorMsg.innerHTML = text + '<a href="#" onclick="event.preventDefault(); parent.postMessage({ pluginMessage: { type: \'open-url\', url: \'https://collabrix.zone/upgrade\' } }, \'*\');" style="color: var(--primary);">Reactivate →</a>';
-      return;
-    }
-    if (errorCode === "LICENSE_EXPIRED") {
-      text = "Your license has expired. ";
-      errorMsg.innerHTML = text + '<a href="#" onclick="event.preventDefault(); parent.postMessage({ pluginMessage: { type: \'open-url\', url: \'https://collabrix.zone/upgrade\' } }, \'*\');" style="color: var(--primary);">Renew →</a>';
-      return;
-    }
-    errorMsg.textContent = text;
+    errorMsg.textContent = message;
+  }
+
+  function showOutput(code) {
+    generateBtn.disabled = false;
+    spinner.style.display = "none";
+    generateLabel.textContent = "Generate Code";
+    outputSection.style.display = "block";
+    enhanceBtn.style.display = "block";
+    codeOutput.value = code;
+    lastGeneratedCode = code;
+
+    // Show preview
+    var frame = document.getElementById("preview-frame");
+    frame.srcdoc = code;
   }
 
   async function checkLicense(licenseKey) {
     try {
-      const headers = { "x-figma-user-id": "ui-check" };
+      var headers = { "x-figma-user-id": "ui-check" };
       if (licenseKey) headers["x-collabrix-license"] = licenseKey;
+      var resp = await fetch(LICENSE_CHECK_URL, { headers: headers });
+      var data = await resp.json();
 
-      const resp = await fetch(LICENSE_CHECK_URL, { headers });
-      const data = await resp.json();
-
-      const statusEl = document.getElementById("license-status");
-      const usageBar = document.getElementById("usage-bar");
-      const usageText = document.getElementById("usage-text");
-      const upgradeBtn = document.getElementById("upgrade-btn");
+      var statusEl = document.getElementById("license-status");
+      var usageBar = document.getElementById("usage-bar");
+      var usageText = document.getElementById("usage-text");
+      var upgradeBtn = document.getElementById("upgrade-btn");
 
       if (data.valid && data.plan === "pro") {
         statusEl.textContent = "Pro Plan active";
@@ -536,51 +1121,88 @@
       }
 
       usageBar.style.width = (data.percentUsed || 0) + "%";
-      usageText.textContent = data.message || `${data.generationsUsed || 0} / ${data.generationsLimit || 10} generations used`;
-
+      usageText.textContent = data.message || (data.generationsUsed || 0) + " / " + (data.generationsLimit || 10) + " generations used";
       if (data.daysLeft !== undefined) {
-        usageText.textContent += ` · Resets in ${data.daysLeft} days`;
+        usageText.textContent += " · Resets in " + data.daysLeft + " days";
       }
     } catch (err) {
       document.getElementById("usage-text").textContent = "Unable to check usage";
     }
   }
 
+  // Hybrid generation: skeleton + AI polish
+  async function doAIGenerate(nodeData, skeleton, options) {
+    try {
+      var response = await fetch(PROXY_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-figma-user-id": "anonymous",
+        },
+        body: JSON.stringify({
+          nodeData: nodeData,
+          language: "html",
+          options: currentOptions,
+          licenseKey: storedLicenseKey || null,
+          figmaUserId: "anonymous",
+          skeletonHTML: skeleton,
+        }),
+      });
+
+      var data = await response.json();
+
+      if (!response.ok) {
+        // AI failed — fall back to skeleton
+        showOutput(skeleton);
+        enhanceBtn.style.display = "block";
+        enhanceBtn.disabled = false;
+        enhanceBtn.textContent = "Retry AI polish";
+        return;
+      }
+
+      showOutput(data.code);
+      enhanceBtn.style.display = "block";
+      enhanceBtn.disabled = false;
+      enhanceBtn.textContent = "Re-generate with AI";
+    } catch (err) {
+      // Network error — fall back to skeleton
+      showOutput(skeleton);
+      enhanceBtn.style.display = "block";
+      enhanceBtn.disabled = false;
+      enhanceBtn.textContent = "Retry AI polish";
+    }
+  }
+
   // Listen for messages from sandbox
-  window.onmessage = (event) => {
-    const msg = event.data.pluginMessage;
+  window.onmessage = function(event) {
+    var msg = event.data.pluginMessage;
     if (!msg) return;
 
     switch (msg.type) {
       case "settings":
-        currentLanguage = msg.language || "react";
-        currentOptions = msg.options || currentOptions;
         storedLicenseKey = msg.licenseKey || "";
-
-        document.querySelectorAll(".lang-btn").forEach((btn) => {
-          btn.classList.toggle("active", btn.dataset.lang === currentLanguage);
-        });
-        optionIds.forEach((id) => {
-          document.getElementById("opt-" + id).checked = !!currentOptions[id];
-        });
+        if (msg.options) {
+          currentOptions = msg.options;
+          optionIds.forEach(function(id) {
+            var el = document.getElementById("opt-" + id);
+            if (el) el.checked = !!currentOptions[id];
+          });
+        }
         if (storedLicenseKey) {
           document.getElementById("license-input").value = storedLicenseKey;
         }
         checkLicense(storedLicenseKey);
         break;
 
-      case "code-result":
-        generateBtn.disabled = false;
-        spinner.style.display = "none";
-        generateLabel.textContent = "Generate Code";
-        outputSection.style.display = "block";
-        codeOutput.value = msg.code;
-        if (msg.usage) {
-          document.getElementById("usage-bar").style.width =
-            Math.round((msg.usage.used / msg.usage.limit) * 100) + "%";
-          document.getElementById("usage-text").textContent =
-            `${msg.usage.used} / ${msg.usage.limit} generations used`;
-        }
+      case "do-generate":
+        // Pure deterministic conversion — no API call
+        lastNodeData = msg.nodeData;
+        var html = generateHTML(msg.nodeData);
+        lastSkeletonHTML = html;
+        showOutput(html);
+        enhanceBtn.style.display = "block";
+        enhanceBtn.disabled = false;
+        enhanceBtn.textContent = "Enhance with AI";
         break;
 
       case "error":
@@ -594,7 +1216,7 @@
 
   // Init
   parent.postMessage({ pluginMessage: { type: "get-settings" } }, "*");
-  parent.postMessage({ pluginMessage: { type: "resize", width: 340, height: 480 } }, "*");
+  parent.postMessage({ pluginMessage: { type: "resize", width: 380, height: 560 } }, "*");
 </script>
 </body>
 </html>

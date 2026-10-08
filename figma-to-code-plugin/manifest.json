@@ -4,11 +4,13 @@
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
+  "permissions": ["currentuser"],
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": [
       "https://api.collabrix.zone",
-      "https://collabrix.zone"
+      "https://collabrix.zone",
+      "http://localhost:3000"
     ],
     "reasoning": "Sends design data to Collabrix proxy which calls Claude AI to generate code."
   }

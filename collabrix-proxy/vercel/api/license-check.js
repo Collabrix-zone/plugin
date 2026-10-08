@@ -1,10 +1,31 @@
 import { kv } from "@vercel/kv";
 
 const FREE_TIER_LIMIT = 10;
+const IS_LOCAL = process.env.LOCAL_DEV === "true";
 
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-figma-user-id, x-collabrix-license");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "GET") {
     return res.status(405).json({ error: "METHOD_NOT_ALLOWED", message: "Use GET" });
+  }
+
+  if (IS_LOCAL) {
+    return res.status(200).json({
+      valid: true,
+      plan: "free",
+      generationsUsed: 0,
+      generationsLimit: 999,
+      percentUsed: 0,
+      daysLeft: 30,
+      message: "Local Dev · Unlimited generations",
+    });
   }
 
   try {

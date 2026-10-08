@@ -1,90 +1,238 @@
-const PROXY_URL = "https://api.collabrix.zone/generate";
-const LICENSE_CHECK_URL = "https://api.collabrix.zone/license-check";
-const UPGRADE_URL = "https://collabrix.zone/upgrade";
-const FREE_TIER_LIMIT = 10;
-const PRO_TIER_LIMIT = 200;
+// TODO: Change back to https://api.collabrix.zone before publishing
+var PROXY_URL = "http://localhost:3000/api/generate";
+var LICENSE_CHECK_URL = "http://localhost:3000/api/license-check";
+var UPGRADE_URL = "https://collabrix.zone/upgrade";
 
-figma.showUI(__html__, { width: 340, height: 480 });
+figma.showUI(__html__, { width: 380, height: 560 });
 
-function serializeNode(node) {
-  const data = {
+// ═══════════════════════════════════════════════════
+//  NODE SERIALIZER — extracts all design data
+// ═══════════════════════════════════════════════════
+
+async function serializeNode(node, isRoot) {
+  if (node.visible === false) return null;
+
+  var data = {
     id: node.id,
     name: node.name,
     type: node.type,
-    x: node.x,
-    y: node.y,
-    width: node.width,
-    height: node.height,
-    opacity: node.opacity,
-    blendMode: node.blendMode,
+    // x/y are relative to parent in Figma API
+    x: Math.round(node.x),
+    y: Math.round(node.y),
+    width: Math.round(node.width),
+    height: Math.round(node.height),
   };
 
+  if (isRoot) {
+    // Don't use canvas position for root
+    data.x = 0;
+    data.y = 0;
+  }
+
+  // Opacity
+  if ("opacity" in node && node.opacity !== 1) {
+    data.opacity = node.opacity;
+  }
+
+  // Fills (skip for text — handled separately as color)
   if ("fills" in node && node.fills !== figma.mixed) {
-    data.fills = node.fills.map(serializePaint);
-  }
+    var visibleFills = [];
+    var hasImageFill = false;
+    for (var i = 0; i < node.fills.length; i++) {
+      if (node.fills[i].visible !== false) {
+        visibleFills.push(serializePaint(node.fills[i]));
+        if (node.fills[i].type === "IMAGE") hasImageFill = true;
+      }
+    }
+    if (visibleFills.length > 0) data.fills = visibleFills;
 
-  if ("strokes" in node) {
-    data.strokes = node.strokes.map(serializePaint);
-    data.strokeWeight = node.strokeWeight;
-    data.strokeAlign = node.strokeAlign;
-  }
-
-  if ("effects" in node) {
-    data.effects = node.effects.map((effect) => ({
-      type: effect.type,
-      visible: effect.visible,
-      radius: effect.radius,
-      offset: effect.offset,
-      color: effect.color,
-    }));
-  }
-
-  if ("cornerRadius" in node) {
-    if (node.cornerRadius !== figma.mixed) {
-      data.cornerRadius = node.cornerRadius;
-    } else {
-      data.topLeftRadius = node.topLeftRadius;
-      data.topRightRadius = node.topRightRadius;
-      data.bottomLeftRadius = node.bottomLeftRadius;
-      data.bottomRightRadius = node.bottomRightRadius;
+    // Export image fills as base64 PNG
+    if (hasImageFill && "exportAsync" in node) {
+      try {
+        var imgBytes = await node.exportAsync({ format: "PNG", constraint: { type: "SCALE", value: 2 } });
+        var base64 = figma.base64Encode(imgBytes);
+        data.imageBase64 = "data:image/png;base64," + base64;
+      } catch (e) {
+        // Ignore export errors
+      }
     }
   }
 
-  if (node.type === "TEXT") {
-    data.fontName = node.fontName !== figma.mixed ? node.fontName : undefined;
-    data.fontSize = node.fontSize !== figma.mixed ? node.fontSize : undefined;
-    data.fontWeight = node.fontWeight !== figma.mixed ? node.fontWeight : undefined;
-    data.letterSpacing = node.letterSpacing !== figma.mixed ? node.letterSpacing : undefined;
-    data.lineHeight = node.lineHeight !== figma.mixed ? node.lineHeight : undefined;
-    data.textAlignHorizontal = node.textAlignHorizontal;
-    data.textAlignVertical = node.textAlignVertical;
-    data.characters = node.characters;
+  // Strokes
+  if ("strokes" in node && node.strokes.length > 0) {
+    var visibleStrokes = [];
+    for (var j = 0; j < node.strokes.length; j++) {
+      if (node.strokes[j].visible !== false) {
+        visibleStrokes.push(serializePaint(node.strokes[j]));
+      }
+    }
+    if (visibleStrokes.length > 0) {
+      data.strokes = visibleStrokes;
+      data.strokeWeight = node.strokeWeight !== figma.mixed ? node.strokeWeight : 1;
+      data.strokeAlign = node.strokeAlign;
+    }
   }
 
+  // Effects
+  if ("effects" in node && node.effects.length > 0) {
+    var visibleEffects = [];
+    for (var k = 0; k < node.effects.length; k++) {
+      var ef = node.effects[k];
+      if (ef.visible !== false) {
+        visibleEffects.push({
+          type: ef.type,
+          radius: ef.radius,
+          offset: ef.offset || { x: 0, y: 0 },
+          color: ef.color,
+          spread: ef.spread || 0,
+        });
+      }
+    }
+    if (visibleEffects.length > 0) data.effects = visibleEffects;
+  }
+
+  // Corner radius
+  if ("cornerRadius" in node) {
+    if (node.cornerRadius !== figma.mixed) {
+      if (node.cornerRadius > 0) data.cornerRadius = node.cornerRadius;
+    } else {
+      data.topLeftRadius = node.topLeftRadius || 0;
+      data.topRightRadius = node.topRightRadius || 0;
+      data.bottomLeftRadius = node.bottomLeftRadius || 0;
+      data.bottomRightRadius = node.bottomRightRadius || 0;
+    }
+  }
+
+  // Clipping
+  if ("clipsContent" in node && node.clipsContent) {
+    data.clipsContent = true;
+  }
+
+  // Text
+  if (node.type === "TEXT") {
+    data.characters = node.characters;
+    if (node.fontName !== figma.mixed) {
+      data.fontFamily = node.fontName.family;
+      data.fontStyle = node.fontName.style;
+    }
+    if (node.fontSize !== figma.mixed) data.fontSize = node.fontSize;
+    if (node.letterSpacing !== figma.mixed && node.letterSpacing) {
+      data.letterSpacing = node.letterSpacing;
+    }
+    if (node.lineHeight !== figma.mixed && node.lineHeight) {
+      data.lineHeight = node.lineHeight;
+    }
+    data.textAlignHorizontal = node.textAlignHorizontal;
+    if (node.textDecoration && node.textDecoration !== "NONE" && node.textDecoration !== figma.mixed) {
+      data.textDecoration = node.textDecoration;
+    }
+    if (node.textCase && node.textCase !== figma.mixed && node.textCase !== "ORIGINAL") {
+      data.textCase = node.textCase;
+    }
+  }
+
+  // Auto-layout (→ flexbox)
   if ("layoutMode" in node && node.layoutMode !== "NONE") {
     data.layoutMode = node.layoutMode;
-    data.itemSpacing = node.itemSpacing;
-    data.paddingLeft = node.paddingLeft;
-    data.paddingRight = node.paddingRight;
-    data.paddingTop = node.paddingTop;
-    data.paddingBottom = node.paddingBottom;
+    data.itemSpacing = node.itemSpacing || 0;
+    data.paddingLeft = node.paddingLeft || 0;
+    data.paddingRight = node.paddingRight || 0;
+    data.paddingTop = node.paddingTop || 0;
+    data.paddingBottom = node.paddingBottom || 0;
     data.primaryAxisAlignItems = node.primaryAxisAlignItems;
     data.counterAxisAlignItems = node.counterAxisAlignItems;
+    if (node.primaryAxisSizingMode) data.primaryAxisSizingMode = node.primaryAxisSizingMode;
+    if (node.counterAxisSizingMode) data.counterAxisSizingMode = node.counterAxisSizingMode;
+    if (node.layoutWrap) data.layoutWrap = node.layoutWrap;
   }
 
+  // Child sizing within auto-layout
+  if (node.layoutSizingHorizontal) data.layoutSizingHorizontal = node.layoutSizingHorizontal;
+  if (node.layoutSizingVertical) data.layoutSizingVertical = node.layoutSizingVertical;
+  if (node.layoutPositioning === "ABSOLUTE") data.layoutPositioning = "ABSOLUTE";
+  if ("layoutGrow" in node && node.layoutGrow === 1) data.layoutGrow = 1;
+  if ("layoutAlign" in node && node.layoutAlign === "STRETCH") data.layoutAlign = "STRETCH";
+
+  // Constraints (for non-auto-layout children)
+  if ("constraints" in node) {
+    data.constraints = {
+      horizontal: node.constraints.horizontal,
+      vertical: node.constraints.vertical,
+    };
+  }
+
+  // Reactions (prototype interactions)
   if ("reactions" in node && node.reactions.length > 0) {
-    data.reactions = node.reactions;
+    var reactions = [];
+    for (var r = 0; r < node.reactions.length; r++) {
+      var reaction = node.reactions[r];
+      var rData = {};
+      if (reaction.trigger) rData.trigger = reaction.trigger.type;
+      if (reaction.action) {
+        rData.action = reaction.action.type;
+        if (reaction.action.url) rData.url = reaction.action.url;
+        if (reaction.action.destinationId) rData.destinationId = reaction.action.destinationId;
+        if (reaction.action.navigation) rData.navigation = reaction.action.navigation;
+      }
+      reactions.push(rData);
+    }
+    data.reactions = reactions;
   }
 
+  // ── Export vectors/icons as inline SVG ──
+  var isVector = (
+    node.type === "VECTOR" ||
+    node.type === "BOOLEAN_OPERATION" ||
+    node.type === "STAR" ||
+    node.type === "LINE" ||
+    node.type === "ELLIPSE" ||
+    node.type === "POLYGON"
+  );
+
+  // Also export groups/frames that look like icons (small, contain only vectors)
+  var isIconLike = false;
+  if (!isVector && "children" in node && node.children.length > 0 && node.width <= 64 && node.height <= 64) {
+    var allVectors = true;
+    for (var v = 0; v < node.children.length; v++) {
+      var childType = node.children[v].type;
+      if (childType !== "VECTOR" && childType !== "BOOLEAN_OPERATION" && childType !== "ELLIPSE" &&
+          childType !== "LINE" && childType !== "STAR" && childType !== "POLYGON" && childType !== "GROUP") {
+        allVectors = false;
+        break;
+      }
+    }
+    if (allVectors) isIconLike = true;
+  }
+
+  if (isVector || isIconLike) {
+    try {
+      var svgString = await node.exportAsync({ format: "SVG_STRING" });
+      data.svgContent = svgString;
+      data.isIcon = true;
+      // Don't recurse into children — the SVG captures everything
+      return data;
+    } catch (e) {
+      // Fall through to normal rendering
+    }
+  }
+
+  // Children
   if ("children" in node) {
-    data.children = node.children.map(serializeNode);
+    var children = [];
+    for (var c = 0; c < node.children.length; c++) {
+      if (node.children[c].visible !== false) {
+        var childData = await serializeNode(node.children[c], false);
+        if (childData) children.push(childData);
+      }
+    }
+    if (children.length > 0) data.children = children;
   }
 
   return data;
 }
 
 function serializePaint(paint) {
-  const result = { type: paint.type, visible: paint.visible };
+  var result = { type: paint.type };
   if (paint.color) {
     result.color = {
       r: paint.color.r,
@@ -93,14 +241,21 @@ function serializePaint(paint) {
       a: paint.opacity !== undefined ? paint.opacity : 1,
     };
   }
+  if (paint.type === "GRADIENT_LINEAR" && paint.gradientStops) {
+    result.gradientStops = paint.gradientStops;
+  }
   if (paint.imageRef) {
     result.imageRef = paint.imageRef;
   }
   return result;
 }
 
-async function handleGenerate(msg) {
-  const selection = figma.currentPage.selection;
+// ═══════════════════════════════════════════════════
+//  MESSAGE HANDLERS
+// ═══════════════════════════════════════════════════
+
+async function handleGenerate() {
+  var selection = figma.currentPage.selection;
 
   if (selection.length === 0) {
     figma.ui.postMessage({
@@ -111,69 +266,32 @@ async function handleGenerate(msg) {
     return;
   }
 
-  const nodeData = serializeNode(selection[0]);
-  const licenseKey = await figma.clientStorage.getAsync("licenseKey");
-  const language = await figma.clientStorage.getAsync("language") || "react";
-  const options = await figma.clientStorage.getAsync("options") || {};
+  figma.ui.postMessage({ type: "generating" });
 
-  try {
-    const response = await fetch(PROXY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-figma-user-id": figma.currentUser?.id || "anonymous",
-      },
-      body: JSON.stringify({
-        nodeData,
-        language,
-        options,
-        licenseKey: licenseKey || null,
-        figmaUserId: figma.currentUser?.id || "anonymous",
-      }),
-    });
+  var nodeData = await serializeNode(selection[0], true);
+  var figmaUserId = (figma.currentUser && figma.currentUser.id) || "anonymous";
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      figma.ui.postMessage({
-        type: "error",
-        error: data.error,
-        message: data.message,
-      });
-      return;
-    }
-
-    figma.ui.postMessage({
-      type: "code-result",
-      code: data.code,
-      language,
-      usage: data.usage,
-    });
-  } catch (err) {
-    figma.ui.postMessage({
-      type: "error",
-      error: "GENERATION_FAILED",
-      message: "Code generation failed. Try again or contact support@collabrix.zone",
-    });
-  }
+  figma.ui.postMessage({
+    type: "do-generate",
+    nodeData: nodeData,
+    figmaUserId: figmaUserId,
+  });
 }
 
-figma.ui.onmessage = async (msg) => {
+figma.ui.onmessage = async function(msg) {
   switch (msg.type) {
     case "generate":
-      await handleGenerate(msg);
+      await handleGenerate();
       break;
 
     case "get-settings": {
-      const language = await figma.clientStorage.getAsync("language") || "react";
-      const options = await figma.clientStorage.getAsync("options") || {};
-      const licenseKey = await figma.clientStorage.getAsync("licenseKey") || "";
-      figma.ui.postMessage({ type: "settings", language, options, licenseKey });
+      var options = await figma.clientStorage.getAsync("options") || {};
+      var licenseKey = await figma.clientStorage.getAsync("licenseKey") || "";
+      figma.ui.postMessage({ type: "settings", options: options, licenseKey: licenseKey });
       break;
     }
 
     case "save-settings":
-      if (msg.language) await figma.clientStorage.setAsync("language", msg.language);
       if (msg.options) await figma.clientStorage.setAsync("options", msg.options);
       break;
 
